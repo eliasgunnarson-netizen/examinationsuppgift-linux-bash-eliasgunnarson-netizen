@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Kontrollera att scriptet körs som root eftersom useradd och rättigheter kräver det
+# Kontrollera att scriptet körs som root eftersom useradd 
 if [ "$EUID" -ne 0 ]; then
     echo "Fel: Detta script måste köras som root."
     exit 1
@@ -14,10 +14,15 @@ fi
 
 # Skapa varje användare som skickas in till scriptet
 for username in "$@"; do
-    if ! id "$username" &>/dev/null; then
-        useradd -m "$username"
+    
+    # Avbryt och hoppa till nästa om användaren redan existerar
+    if id "$username" &>/dev/null; then
+        echo "Användaren $username existerar redan, hoppar över."
+        continue
     fi
 
+    useradd -m "$username"
+    
     home_dir="/home/$username"
 
     # Skapa de mappar som varje ny användare ska ha i sin hemkatalog
@@ -28,9 +33,8 @@ for username in "$@"; do
     chmod 700 "$home_dir/Documents" "$home_dir/Downloads" "$home_dir/Work"
 
     # Skapa en personlig välkomstfil och lista andra användare som finns i systemet
-    
+    {
         echo "Välkommen $username"
-        echo "Andra användare:"
         cut -d: -f1 /etc/passwd | grep -v "^$username$"
     } > "$home_dir/welcome.txt"
 
